@@ -2,7 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"net/http"
+
+	"github.com/IronWill79/pokedex-go/internal/pokecache"
 )
 
 type LocationConfig struct {
@@ -22,45 +23,40 @@ type locationResults struct {
 	Results  []locationEndpoint `json:"results"`
 }
 
-func GetLocations(url string) (locationResults, error) {
+func GetLocationResults(url string, cache *pokecache.Cache) (locationResults, error) {
 	var results locationResults
-	res, err := http.Get(url)
-	if err != nil {
-		return results, err
-	}
-	defer res.Body.Close()
-	decoder := json.NewDecoder(res.Body)
-	if err := decoder.Decode(&results); err != nil {
+	res, _ := cache.Get(url)
+	if err := json.Unmarshal(res, &results); err != nil {
 		return results, err
 	}
 	return results, nil
 }
 
-func GetNextLocations(c *LocationConfig) ([]string, error) {
+func GetNextLocations(c *LocationConfig, cache *pokecache.Cache) ([]string, error) {
 	var result []string
-	res, err := GetLocations(c.Next)
+	res, err := GetLocationResults(c.Next, cache)
 	if err != nil {
 		return nil, err
 	}
-	c.Next = res.Next
 	if res.Previous != nil {
 		c.Previous = string(*res.Previous)
 	} else {
-		c.Previous = ""
+		c.Previous = c.Next
 	}
+	c.Next = res.Next
 	for _, r := range res.Results {
 		result = append(result, r.Name)
 	}
 	return result, nil
 }
 
-func GetPreviousLocations(c *LocationConfig) ([]string, error) {
+func GetPreviousLocations(c *LocationConfig, cache *pokecache.Cache) ([]string, error) {
 	var result []string
 	if c.Previous == "" {
 		result = append(result, "you're on the first page")
 		return result, nil
 	}
-	res, err := GetLocations(c.Previous)
+	res, err := GetLocationResults(c.Previous, cache)
 	if err != nil {
 		return nil, err
 	}
