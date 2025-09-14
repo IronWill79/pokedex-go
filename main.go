@@ -5,15 +5,19 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/IronWill79/pokedex-go/internal/api"
+	"github.com/IronWill79/pokedex-go/internal/pokecache"
 )
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(c *api.LocationConfig) error
+	callback    func(c *api.LocationConfig, cache *pokecache.Cache) error
 }
+
+var cache *pokecache.Cache
 
 var commands map[string]cliCommand
 
@@ -46,6 +50,8 @@ func main() {
 		Next:     "https://pokeapi.co/api/v2/location-area/",
 		Previous: "",
 	}
+	interval := 5 * time.Second
+	cache = pokecache.NewCache(interval)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -63,7 +69,7 @@ func main() {
 		cleanedInput := cleanInput(input)
 		command := cleanedInput[0]
 		if _, ok := commands[command]; ok {
-			commands[command].callback(&conf)
+			commands[command].callback(&conf, cache)
 		} else {
 			fmt.Println("Unknown command")
 		}
@@ -82,13 +88,13 @@ func cleanInput(text string) []string {
 	return cleanedInput
 }
 
-func commandExit(c *api.LocationConfig) error {
+func commandExit(c *api.LocationConfig, cache *pokecache.Cache) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(c *api.LocationConfig) error {
+func commandHelp(c *api.LocationConfig, cache *pokecache.Cache) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Print("Usage:\n\n")
 	for _, v := range commands {
@@ -97,8 +103,8 @@ func commandHelp(c *api.LocationConfig) error {
 	return nil
 }
 
-func commandMap(c *api.LocationConfig) error {
-	areas, err := api.GetNextLocations(c)
+func commandMap(c *api.LocationConfig, cache *pokecache.Cache) error {
+	areas, err := api.GetNextLocations(c, cache)
 	if err != nil {
 		return err
 	}
@@ -108,8 +114,8 @@ func commandMap(c *api.LocationConfig) error {
 	return nil
 }
 
-func commandMapb(c *api.LocationConfig) error {
-	areas, err := api.GetPreviousLocations(c)
+func commandMapb(c *api.LocationConfig, cache *pokecache.Cache) error {
+	areas, err := api.GetPreviousLocations(c, cache)
 	if err != nil {
 		return err
 	}
