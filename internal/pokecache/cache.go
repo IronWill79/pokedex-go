@@ -18,7 +18,7 @@ type Cache struct {
 	mutex   sync.Mutex
 }
 
-func GetLocations(url string) ([]byte, error) {
+func GetPokeapi(url string) ([]byte, error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -56,9 +56,9 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 	defer c.mutex.Unlock()
 	_, ok := c.entries[key]
 	if !ok {
-		val, err := GetLocations(key)
+		val, err := GetPokeapi(key)
 		if err != nil {
-			fmt.Errorf("failed the api call")
+			fmt.Println("failed the api call")
 		}
 		c.entries[key] = cacheEntry{
 			createdAt: time.Now(),
