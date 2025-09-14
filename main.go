@@ -14,7 +14,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(c *api.LocationConfig, cache *pokecache.Cache) error
+	callback    func(param string, c *api.LocationConfig, cache *pokecache.Cache) error
 }
 
 var cache *pokecache.Cache
@@ -29,6 +29,11 @@ func main() {
 			name:        "exit",
 			description: "Exit the Pokedex",
 			callback:    commandExit,
+		},
+		"explore": {
+			name:        "explore <area_name>",
+			description: "Show Pokemon in location area",
+			callback:    commandExplore,
 		},
 		"help": {
 			name:        "help",
@@ -68,8 +73,12 @@ func main() {
 		}
 		cleanedInput := cleanInput(input)
 		command := cleanedInput[0]
+		param := ""
+		if len(cleanedInput) > 1 {
+			param = cleanedInput[1]
+		}
 		if _, ok := commands[command]; ok {
-			commands[command].callback(&conf, cache)
+			commands[command].callback(param, &conf, cache)
 		} else {
 			fmt.Println("Unknown command")
 		}
@@ -88,13 +97,13 @@ func cleanInput(text string) []string {
 	return cleanedInput
 }
 
-func commandExit(c *api.LocationConfig, cache *pokecache.Cache) error {
+func commandExit(param string, c *api.LocationConfig, cache *pokecache.Cache) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(c *api.LocationConfig, cache *pokecache.Cache) error {
+func commandHelp(param string, c *api.LocationConfig, cache *pokecache.Cache) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Print("Usage:\n\n")
 	for _, v := range commands {
@@ -103,7 +112,7 @@ func commandHelp(c *api.LocationConfig, cache *pokecache.Cache) error {
 	return nil
 }
 
-func commandMap(c *api.LocationConfig, cache *pokecache.Cache) error {
+func commandMap(param string, c *api.LocationConfig, cache *pokecache.Cache) error {
 	areas, err := api.GetNextLocations(c, cache)
 	if err != nil {
 		return err
@@ -114,13 +123,26 @@ func commandMap(c *api.LocationConfig, cache *pokecache.Cache) error {
 	return nil
 }
 
-func commandMapb(c *api.LocationConfig, cache *pokecache.Cache) error {
+func commandMapb(param string, c *api.LocationConfig, cache *pokecache.Cache) error {
 	areas, err := api.GetPreviousLocations(c, cache)
 	if err != nil {
 		return err
 	}
 	for _, area := range areas {
 		fmt.Printf("%s\n", area)
+	}
+	return nil
+}
+
+func commandExplore(param string, c *api.LocationConfig, cache *pokecache.Cache) error {
+	fmt.Printf("Exploring %s...", param)
+	fmt.Println("Found Pokemon:")
+	pokemon, err := api.GetPokemonFromArea(param, cache)
+	if err != nil {
+		return err
+	}
+	for _, name := range pokemon {
+		fmt.Printf("- %s\n", name)
 	}
 	return nil
 }
