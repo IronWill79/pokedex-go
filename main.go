@@ -45,6 +45,11 @@ func main() {
 			description: "Displays a help message",
 			callback:    commandHelp,
 		},
+		"inspect": {
+			name:        "inspect <pokemon_name>",
+			description: "Show information about caught Pokemon",
+			callback:    commandInspect,
+		},
 		"map": {
 			name:        "map",
 			description: "Displays the next 20 Pokemon world map location areas",
@@ -54,6 +59,11 @@ func main() {
 			name:        "mapb",
 			description: "Displays the previous 20 Pokemon world map location areas",
 			callback:    commandMapb,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "List all caught Pokemon",
+			callback:    commandPokedex,
 		},
 	}
 	pokeApi = api.NewPokeApi()
@@ -161,9 +171,33 @@ func commandCatch(param string, c *api.LocationConfig) error {
 	chance := rand.Intn(1000)
 	if chance > pokemon.BaseExperience {
 		pokeDex[param] = pokemon
-		fmt.Printf("%s was caught!\n", param)
+		fmt.Printf("%s was caught!\nYou may now inspect it with the inspect command.\n", param)
 	} else {
 		fmt.Printf("%s escaped!\n", param)
+	}
+	return nil
+}
+
+func commandInspect(param string, c *api.LocationConfig) error {
+	if pokemon, ok := pokeDex[param]; ok {
+		fmt.Printf("Name: %s\nHeight: %d\nWeight: %d\nStats:\n", pokemon.Name, pokemon.Height, pokemon.Weight)
+		for _, stat := range pokemon.Stats {
+			fmt.Printf("  -%s: %d\n", stat.Stat.Name, stat.BaseStat)
+		}
+		fmt.Println("Types:")
+		for _, t := range pokemon.Types {
+			fmt.Printf("  - %s\n", t.Type.Name)
+		}
+	} else {
+		fmt.Println("you have not caught that pokemon")
+	}
+	return nil
+}
+
+func commandPokedex(param string, c *api.LocationConfig) error {
+	fmt.Println("Your Pokedex:")
+	for _, pokemon := range pokeDex {
+		fmt.Printf(" - %s\n", pokemon.Name)
 	}
 	return nil
 }
